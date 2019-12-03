@@ -1,0 +1,267 @@
+module display (
+    input clk,  // clock
+    input rst,  // reset
+    input whichlevel[4],
+    input counter[50],
+    output outer [16],
+    output inner [16],
+    input button,
+    output buzz,
+    output score_encoded[1000],
+    output end_signal[1],
+    output streak_num[10],
+    input enable[1],
+    input reset[1]
+
+    
+  ) {
+  //all levels are stored as an encoded binary number, bit-wise. 1 indicates there is a beat, and 0 indicates there is not.
+  const LVL1 = b00000000100001000100010001000100001000110001100011000110001001001100100100110010010011;
+  const LVL2 = b0000000010000110010100110001110000110000110000100111001000100110000110001110000110010001100100010011000111000011000011000010001100100010011000011000111000011000100011001000100110000110000110000110001000;
+  const LVL3 = b0000000010000111010001001110001100001110001011010001111010001001110000110100110100110010001100101010011011011001011010011110001000110010001001100101100001110001100011001100101010011011011001011000011000;
+
+  .clk(clk){
+    .rst(rst){
+    dff scoreencoded[200](#INIT(1));
+    dff streak[10];      
+    dff num[16];
+    dff dig0[16];
+    dff dig1[16];
+    dff dig2[16];
+    dff dig3[16];
+    dff dig4[16];
+    dff dig5[16];
+    dff dig6[16];
+    dff dig7[16];
+    dff dig8[16];
+    dff dig9[16];
+    dff dig10[16];
+    dff dig11[16];
+    dff dig12[16];
+    dff dig13[16];
+    dff dig14[16];
+    dff dig15[16];
+    dff buzzer[16];
+    dff accepted[2];
+    dff levelscore[250];
+    dff flight[4];
+    register regs(#WIDTH(8)); //external reg for button press that is not linked to clk cycle.
+    }
+  }
+  always {
+    score_encoded = scoreencoded.q; //always pass the encoded score out to mojo_top
+    buzz = 0;
+    end_signal = 0;
+    streak_num = streak.q;
+    case(whichlevel){ //take the level as an input to decide which level is being played
+      b01:
+      levelscore.d = LVL1;
+      regs.en = 1;
+      regs.data = 0;
+      b10:
+      levelscore.d = LVL2;
+      regs.en = 1;
+      regs.data = 0;
+      b11:
+      levelscore.d = LVL3;
+      regs.en = 1;
+      regs.data = 0;
+    }
+    
+      outer = num.q;      //logic for setting lights.
+      regs.en = button; 
+      regs.data = 0;
+      inner[0] = levelscore.q[0 + dig0.q];
+      inner[1] = levelscore.q[1 + dig1.q];
+      inner[2] = levelscore.q[2 + dig2.q];
+      inner[3] = levelscore.q[3 + dig3.q];
+      inner[4] = levelscore.q[4 + dig4.q];
+      inner[5] = levelscore.q[5 + dig5.q];
+      inner[6] = levelscore.q[6 + dig6.q];
+      inner[7] = levelscore.q[7 + dig7.q];
+      inner[8] = levelscore.q[8 + dig8.q];
+      inner[9] = levelscore.q[9 + dig9.q];
+      inner[10] = levelscore.q[10 + dig10.q];
+      inner[11] = levelscore.q[11 + dig11.q];
+      inner[12] = levelscore.q[12 + dig12.q];
+      inner[13] = levelscore.q[13 + dig13.q];
+      inner[14] = levelscore.q[14 + dig14.q];
+      inner[15] = levelscore.q[15+ dig15.q];
+    
+    
+
+      if (enable == 1){ //buzzer code
+        if(levelscore.q[buzzer.q] == 1){
+          if(counter<h7FFFFF){ //don't buzz for full duration
+          buzz = 1;
+          }
+        }
+        
+        if(button == 1){ //same button conditioner as mojo_top
+           regs.en = 1;    
+           regs.data = 1;
+        }
+
+        
+        
+        if(regs.out == 1){ 
+          if (levelscore.q[buzzer.q] == 1){
+            //logic for hits and misses for scoreencoded.
+            //multiple inputs on an expected hit are only counted as one miss -- based on the accepted variable.
+            if (accepted.q == 0){ 
+              scoreencoded.d = c{scoreencoded.q,1};
+              streak.d = streak.q + 1;
+              accepted.d = 1;
+              regs.en = 1;
+              regs.data = 0;
+              
+            }
+            if (accepted.q == 1){
+              scoreencoded.d = c{scoreencoded.q,0};
+              streak.d = 0;
+              accepted.d = 2;
+              regs.en = 1;
+              regs.data = 0;
+              
+            }
+            else {
+              regs.en = 1;
+              regs.data = 0;
+            }
+          }
+            else { //for empty beats (no expected input), only count one miss at maximum regardless of number of inputs
+              if (accepted.q == 0){
+                scoreencoded.d = c{scoreencoded.q,0};
+                streak.d = 0;
+                accepted.d = 1;
+                regs.en = 1;
+                regs.data = 0;
+              } 
+             if (accepted.q == 1){
+                streak.d = 0;
+                accepted.d = 1;
+                regs.en = 1;
+                regs.data = 0;
+            
+            }
+        }
+        }
+         
+                      
+        if(counter[24] == 1){
+            if (levelscore.q[buzzer.q] == 1 && accepted.q == 0){ //for expected inputs with NO input, count as a miss
+              scoreencoded.d = c{scoreencoded.q,0};
+              streak.d = 0;
+          }
+        if((c{levelscore.q[buzzer.q + 1],levelscore.q[buzzer.q + 2],levelscore.q[buzzer.q + 3], levelscore.q[buzzer.q + 4],  levelscore.q[buzzer.q + 5],
+              levelscore.q[buzzer.q + 6], levelscore.q[buzzer.q + 7], levelscore.q[buzzer.q +8]}==0)){ //check if the next eight beats are empty, which indicates the end of the song
+            flight.d = 0;
+            num.d = 0;
+            buzzer.d = 0;
+            dig0.d =0;
+            dig1.d =0;
+            dig2.d =0;
+            dig3.d =0;
+            dig4.d =0;
+            dig5.d =0;
+            dig6.d =0;
+            dig7.d =0;
+            dig8.d =0;
+            dig9.d =0;
+            dig10.d =0;
+            dig11.d =0;
+            dig12.d =0;
+            dig13.d =0;
+            dig14.d =0;
+            dig15.d =0;
+            end_signal = 1;           //end_signal is sent to mojo_top to transition out of the RUNLVL state
+        }
+        else{
+          flight.d = flight.q + 1; //update the current beat number (the dff labelled buzzer) and update the lights based on the next 16 bits of the encoded rhythm.
+          buzzer.d = buzzer.q + 1;
+          accepted.d = 0;          
+          num.d = num.q + 1;
+          if(flight.q == b0000){
+            dig0.d = dig0.q + 16;
+          }
+          if(flight.q == b0001){
+            dig1.d = dig1.q + 16;
+          }
+          if(flight.q == b0010){
+            dig2.d = dig2.q + 16;
+          }
+          if(flight.q == b0011){
+            dig3.d = dig3.q + 16;
+          }
+          if(flight.q == b0100){
+            dig4.d = dig4.q + 16;
+          }
+          if(flight.q == b0101){
+            dig5.d = dig5.q + 16;
+          }
+          if(flight.q == b0110){
+            dig6.d = dig6.q + 16;
+          }
+          if(flight.q == b0111){
+            dig7.d = dig7.q + 16;
+          }
+          if(flight.q == b1000){
+            dig8.d = dig8.q + 16;
+          }
+          if(flight.q == b1001){
+            dig9.d = dig9.q + 16;
+          }
+          if(flight.q == b1010){
+            dig10.d = dig10.q + 16;
+          }
+          if(flight.q == b1011){
+            dig11.d = dig11.q + 16;
+          }
+          if(flight.q == b1100){
+            dig12.d = dig12.q + 16;
+          }
+          if(flight.q == b1101){
+            dig13.d = dig13.q + 16;
+          }
+          if(flight.q == b1110){
+            dig14.d = dig14.q + 16;
+          }
+          if(flight.q == b1111){
+            dig15.d = dig15.q + 16;
+            flight.d = 0;
+          }
+          if (num.q == b1111){
+            num.d = 0;
+          }
+
+         }
+
+     }
+    }
+    if (enable == 0){ //shut off the entire module if not needed.
+            flight.d = 0;
+            num.d = 0;
+            buzzer.d = 0;
+            dig0.d =0;
+            dig1.d =0;
+            dig2.d =0;
+            dig3.d =0;
+            dig4.d =0;
+            dig5.d =0;
+            dig6.d =0;
+            dig7.d =0;
+            dig8.d =0;
+            dig9.d =0;
+            dig10.d =0;
+            dig11.d =0;
+            dig12.d =0;
+            dig13.d =0;
+            dig14.d =0;
+            dig15.d =0;
+            streak.d = 0;
+    }
+    if (reset == 1){ //redudancy for resetting the scoreencoded, implement due to it breaking a few times.
+      scoreencoded.d = 1;
+    }
+  }
+}

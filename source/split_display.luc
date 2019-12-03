@@ -1,0 +1,16 @@
+module split_display (
+    input score[14],
+    output thou[4],
+    output hund[4],
+    output ten[4],
+    output one[4]
+  ) {
+ 
+  always {
+    thou = score/d1000;
+    hund = (score-((score/d1000)*d1000))/d100;
+    ten = (score-((score/d1000)*d1000)-(((score-((score/d1000)*d1000))/d100)*d100))/d10;
+    one = score-((score/d1000)*d1000)-(((score-((score/d1000)*d1000))/d100)*d100)-(((score-((score/d1000)*d1000)-(((score-((score/d1000)*d1000))/d100)*d100))/d10)*d10);
+
+  }
+}

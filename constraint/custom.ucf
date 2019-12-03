@@ -1,0 +1,59 @@
+NET "outer<0>" LOC = P41 | IOSTANDARD = LVTTL;
+NET "outer<1>" LOC = P35 | IOSTANDARD = LVTTL;
+NET "outer<2>" LOC = P33 | IOSTANDARD = LVTTL;
+NET "outer<3>" LOC = P30 | IOSTANDARD = LVTTL;
+NET "outer<4>" LOC = P27 | IOSTANDARD = LVTTL;
+NET "outer<5>" LOC = P24 | IOSTANDARD = LVTTL;
+NET "outer<6>" LOC = P22 | IOSTANDARD = LVTTL;
+NET "outer<7>" LOC = P17 | IOSTANDARD = LVTTL;
+NET "outer<8>" LOC = P15 | IOSTANDARD = LVTTL;
+NET "outer<9>" LOC = P12 | IOSTANDARD = LVTTL;
+NET "outer<10>" LOC = P10 | IOSTANDARD = LVTTL;
+NET "outer<11>" LOC = P8 | IOSTANDARD = LVTTL;
+NET "outer<12>" LOC = P6 | IOSTANDARD = LVTTL;
+NET "outer<13>" LOC = P2 | IOSTANDARD = LVTTL;
+NET "outer<14>" LOC = P144 | IOSTANDARD = LVTTL;
+NET "outer<15>" LOC = P142 | IOSTANDARD = LVTTL;
+
+NET "inner<0>" LOC = P78 | IOSTANDARD = LVTTL;
+NET "inner<1>" LOC = P80 | IOSTANDARD = LVTTL;
+NET "inner<2>" LOC = P82 | IOSTANDARD = LVTTL;
+NET "inner<3>" LOC = P84 | IOSTANDARD = LVTTL;
+NET "inner<4>" LOC = P87 | IOSTANDARD = LVTTL;
+NET "inner<5>" LOC = P92 | IOSTANDARD = LVTTL;
+NET "inner<6>" LOC = P94 | IOSTANDARD = LVTTL;
+NET "inner<7>" LOC = P97 | IOSTANDARD = LVTTL;
+NET "inner<8>" LOC = P99 | IOSTANDARD = LVTTL;
+NET "inner<9>" LOC = P101 | IOSTANDARD = LVTTL;
+NET "inner<10>" LOC = P104 | IOSTANDARD = LVTTL;
+NET "inner<11>" LOC = P111 | IOSTANDARD = LVTTL;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+NET "inner<12>" LOC = P114 | IOSTANDARD = LVTTL;
+NET "inner<13>" LOC = P116 | IOSTANDARD = LVTTL;
+NET "inner<14>" LOC = P118 | IOSTANDARD = LVTTL;
+NET "inner<15>" LOC = P120 | IOSTANDARD = LVTTL;
+
+
+
+NET "io_seg<0>" LOC = P79  | IOSTANDARD = LVTTL;     
+NET "io_seg<1>" LOC = P81  | IOSTANDARD = LVTTL;
+NET "io_seg<2>" LOC = P83  | IOSTANDARD = LVTTL;
+NET "io_seg<3>" LOC = P85  | IOSTANDARD = LVTTL;
+NET "io_seg<4>" LOC = P88  | IOSTANDARD = LVTTL;
+NET "sel<0>" LOC = P93  | IOSTANDARD = LVTTL;
+NET "io_seg<5>" LOC = P95  | IOSTANDARD = LVTTL;
+NET "sel<1>" LOC = P98  | IOSTANDARD = LVTTL;
+NET "sel<2>" LOC = P102 | IOSTANDARD = LVTTL;
+NET "io_seg<6>" LOC = P105 | IOSTANDARD = LVTTL;
+NET "io_seg<7>" LOC = P112 | IOSTANDARD = LVTTL;
+NET "sel<3>" LOC = P66 | IOSTANDARD = LVTTL;
+
+NET "test_but<0>" LOC = P137 | IOSTANDARD = LVTTL | PULLUP;
+NET "test_but1<0>" LOC = P133 | IOSTANDARD = LVTTL | PULLUP;
+NET "highest_score_but<0>" LOC = P121 | IOSTANDARD = LVTTL | PULLUP;
+
+
+
+NET "buzz" LOC = P50 | IOSTANDARD = LVTTL;
+
+# PULLDOWN is needed to prevent floating inputs
+NET "button" LOC = P138 | IOSTANDARD = LVTTL | PULLUP;

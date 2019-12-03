@@ -1,0 +1,190 @@
+module score_score (
+    input clk,  // clock
+    input rst,  // reset
+    
+    input scoreencoded[1000],
+    input enable[1],
+    input level[2],
+    input button[1],
+    output score[16], 
+    output end_signal[1],
+    output new_high[1],
+    output type[3],
+    output displaybin[16],
+    output high[16]
+    
+  ) {
+  
+  const SHL = 6b100000;
+  const SHR = 6b100001;
+  const CMPLT = 6b110101;
+  
+  alu alu;
+  
+  .clk(clk){
+    .rst(rst){
+    dff current_score[14];
+    dff hightest_score[14];  
+    dff each_hit[4];   
+    dff total_miss[10];
+    dff consec_hits[4];
+    dff streak_mul[4];
+    dff wait_counter[50];
+    dff loopcounter[scoreencoded.WIDTH](#INIT(d199));
+    dff new_highscore[1];
+      
+    fsm state = {STANDBY, CHECK_FIRST, SCORE_LOOP, SCORE_HIT, SCORE_MISS, FOUR_HITS, FOUR_STREAKS, ADD_SCORE, SCORE_CALCULATION, SCORE_DEDUCTION, HIGHEST, HIGHEST_DISPLAY, END, RESET};
+     }
+  }
+  
+   
+  
+
+  always {
+    score = 0;
+    end_signal = 0;
+    new_high = 0;
+    high = 0;
+    
+    alu.a = 0; 
+    alu.b = 0;
+    alu.alufn = 0;
+    
+    displaybin = 0;
+    type = b001;
+    
+    if(level == 1){       // setting each hit value based on the level
+      each_hit.d = b10;
+    }
+    if(level==2){
+      each_hit.d = b100;
+    }
+    if(level==3){
+      each_hit.d=b101;
+      }
+
+    case(state.q){
+      state.STANDBY:
+        if(enable == 1){
+        end_signal = 0;
+        current_score.d = 0;
+        streak_mul.d = 0;
+        total_miss.d = 0;
+        new_highscore.d = 0;
+        loopcounter.d = d199;
+        state.d = state.CHECK_FIRST; 
+        }
+      
+
+      state.CHECK_FIRST: //checking the first input (first 1 in the scoreencoded)               
+       if(scoreencoded[loopcounter.q] == 0){
+          loopcounter.d = loopcounter.q - 1;
+          state.d = state.CHECK_FIRST;
+        }
+        
+        else if(scoreencoded[loopcounter.q] == 1){
+          loopcounter.d = loopcounter.q - 1;
+          state.d = state.SCORE_LOOP;
+        }
+       
+        
+      state.SCORE_LOOP:   // running through the scoreencoded to check for each value             
+        if(scoreencoded[loopcounter.q] == 1){  // 1 means a hit
+          if(consec_hits.q > 3){         
+            state.d = state.FOUR_HITS;        // four consecutive hits goes to state.FOUR_HITS which adds 1 to streak
+          }        
+          else if(streak_mul.q > 3){          // streak remains at 4
+            state.d = state.FOUR_STREAKS;
+          }
+          else {
+          state.d = state.SCORE_HIT;         
+         }   
+        }
+        
+        if(scoreencoded[loopcounter.q] == 0){   // 0 means a miss
+          state.d = state.SCORE_MISS;        
+          }
+        
+        if(loopcounter.q[199] == 1){       
+            state.d = state.SCORE_DEDUCTION;
+        }
+        
+           
+      state.SCORE_HIT:        
+        consec_hits.d = consec_hits.q + 1;       // consecutive hit adds 1 
+        state.d = state.SCORE_CALCULATION;
+               
+
+      state.FOUR_HITS:                           // streak adds 1
+        streak_mul.d = streak_mul.q + 1;
+        consec_hits.d = 1;     
+        state.d = state.SCORE_CALCULATION;                          
+
+        
+      state.FOUR_STREAKS:                        // maximum streak will be set to 3
+        streak_mul.d = 3;
+        state.d = state.SCORE_CALCULATION;
+         
+
+      state.SCORE_MISS:                          // reset consec_hits and streak 
+        consec_hits.d = 0;
+        streak_mul.d = 0;
+        total_miss.d = total_miss.q + 1 ;
+        loopcounter.d = loopcounter.q - 1;
+        state.d = state.SCORE_LOOP;
+        
+        
+
+      state.SCORE_CALCULATION:              // using alu to calculate each hit based on the number of streaks
+        alu.a = each_hit.q;
+        alu.b = streak_mul.q;
+        alu.alufn = SHL;
+        current_score.d = current_score.q + alu.op;       
+        loopcounter.d = loopcounter.q - 1;
+        state.d = state.SCORE_LOOP;
+        
+        
+      state.SCORE_DEDUCTION:              // deduct scores for misses 
+        alu.a = current_score.q;
+        alu.b = total_miss.q / 4;
+        alu.alufn = SHR;
+        current_score.d = alu.op;
+          
+        state.d = state.HIGHEST;
+        
+      state.HIGHEST:                    // checking if the score is the hightest_score
+       type = b001;
+
+       alu.a = hightest_score.q;
+       alu.b = current_score.q;
+       alu.alufn = CMPLT;
+       if(alu.op == 1){
+         hightest_score.d = current_score.q;  
+         new_highscore.d = 1;
+        }
+        state.d = state.END;
+           
+
+        
+      state.END:
+        displaybin = current_score.q;      // passing the current_score to mojo top to display the current_score
+
+        score = current_score.q;
+        new_high = new_highscore.q;
+
+         if (button == 1){
+          wait_counter.d = 0;  
+          type = b000;       
+      
+          state.d = state.RESET;
+        }        
+        
+        
+        
+      state.RESET:
+        end_signal = 1;        
+        state.d = state.STANDBY;
+    }   
+
+  }
+}

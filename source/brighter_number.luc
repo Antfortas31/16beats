@@ -1,0 +1,27 @@
+module brighter_number (
+    input value[4],
+    output segs[8]    
+  ) {
+ 
+  always {
+    case (value) {
+      b0: segs = ~b11101011;
+      b1: segs = ~b00101000;
+      b10: segs = ~b10110011;
+      b11: segs = ~b10111010;
+      b100: segs = ~b01111000;
+      b101: segs = ~b11011010;
+      b110: segs = ~b11011011;
+      b111: segs = ~b10101000;
+      b1000: segs = ~b11111011;
+      b1001: segs = ~b11111010;
+      default: segs = b0000000;
+      b1010: segs = ~b11110001;   // "P"
+      b1011: segs = ~b01000011;   // "L"
+      b1100: segs = ~b11111001;   // "A"
+      b1101: segs = ~b01111010;   // "Y"
+      
+      b1110: segs = ~b01111001;   // "H"
+    }
+  } 
+}

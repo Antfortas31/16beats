@@ -1,0 +1,147 @@
+module segdisplay (
+    input score[14],
+    input digitcounter[4],
+    input type[3],
+    output sel[4],
+    output io_seg[8],
+    output brighter_seg[8],
+    output brighter_sel[4]
+  ) {
+  
+  split_display split;
+  seven_seg_constants number;
+  brighter_number brighternumber;
+  
+  always {
+    sel = 0;
+    io_seg = 0;
+    brighter_seg = 0;
+    brighter_sel=0;
+    split.score = score;   // goes into split_display to split decimal number into 4 individual number
+    number.value = b0;
+    brighternumber.value=b0;
+
+    case(type){
+      b000:
+        // "PLAY"
+        if(digitcounter[1:0] == 0){  // last two bin digit is 00
+          sel = b0001;  // select the 0th digit
+          number.value = b1101;                       
+          io_seg = number.segs;
+          
+          brighternumber.value = b1100;  // the next digit - 1st digit
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0010;
+        }
+        
+        if(digitcounter[1:0] == 1){
+          sel = b0010;   // select the 1st digit
+          number.value = b1100; 
+          io_seg = number.segs;
+          
+          brighternumber.value = b1011; // the next digit - 2nd digit
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0100;
+        }
+        if(digitcounter[1:0] == 2){
+          sel= b0100;  // select the 2nd digit
+          number.value = b1011;
+          io_seg = number.segs;
+          
+          brighternumber.value = b1010;  // the next digit - 3rd digit
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b1000;
+        }
+        if(digitcounter[1:0] == 3){
+          sel=b1000;  // select the 3rd digit
+          number.value = b1010;
+          io_seg = number.segs;
+          
+          brighternumber.value = b1101;  // the next digit - 0th digit
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0001;
+        }
+      
+      
+      b001:
+        // binary number
+        if(digitcounter[1:0] == 0){  
+          sel = b0001;  
+          number.value = split.one;     
+          io_seg = number.segs;
+          
+          brighternumber.value = split.ten;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0010;
+        }
+        
+        if(digitcounter[1:0] == 1){
+          sel = b0010;
+          number.value = split.ten;
+          io_seg = number.segs;
+          
+          brighternumber.value = split.hund;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0100;
+        }
+        if(digitcounter[1:0] == 2){
+          sel= b0100;
+          number.value = split.hund;
+          io_seg = number.segs;
+          
+          brighternumber.value = split.thou;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b1000;
+        }
+        if(digitcounter[1:0] == 3){
+          sel=b1000;
+          number.value = split.thou;
+          io_seg = number.segs;
+          
+          brighternumber.value = split.one;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0001;
+        }
+        
+      b010:
+        // "HIGH" 
+        if(digitcounter[1:0] == 0){ 
+          sel = b0001;  
+          number.value = b1110;    
+          io_seg = number.segs;
+          
+          brighternumber.value = b110;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0010;
+        }
+        
+        if(digitcounter[1:0] == 1){
+          sel = b0010;
+          number.value = b110;
+          io_seg = number.segs;
+          
+          brighternumber.value = b1;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0100;
+        }
+        if(digitcounter[1:0] == 2){
+          sel= b0100;
+          number.value = b1;
+          io_seg = number.segs;
+          
+          brighternumber.value = b1110;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b1000;
+        }
+        if(digitcounter[1:0] == 3){
+          sel=b1000;
+          number.value = b1110;
+          io_seg = number.segs;
+          
+          brighternumber.value = b1110;
+          brighter_seg = brighternumber.segs;
+          brighter_sel = b0001;
+        }
+    }
+  }
+}

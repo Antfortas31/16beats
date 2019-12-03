@@ -1,0 +1,312 @@
+module mojo_top (
+    input clk,              // 50MHz clock
+    input rst_n,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input cclk,             // configuration clock, AVR ready when high
+    output spi_miso,        // AVR SPI MISO
+    input spi_ss,           // AVR SPI Slave Select
+    input spi_mosi,         // AVR SPI MOSI
+    input spi_sck,          // AVR SPI Clock
+    output spi_channel [4], // AVR general purpose pins (used by default to select ADC channel)
+    input avr_tx,           // AVR TX (FPGA RX)
+    output avr_rx,          // AVR RX (FPGA TX)
+    input avr_rx_busy,       // AVR RX buffer full
+    
+    output outer [16],
+    output inner [16],
+    input button,
+    output buzz,
+    
+    output io_seg[8],
+    output sel[4]
+  
+  ) {
+  
+  sig rst;                  // reset signal
+  segdisplay segdisplay;
+  .clk(clk) {
+    // The reset conditioner is used to synchronize the reset signal to the FPGA
+    // clock. This ensures the entire FPGA comes out of reset at the same time.
+    reset_conditioner reset_cond;
+    edge_detector button1_edge(#RISE(1),#FALL(0));
+    button_conditioner button1_cond;
+    
+    .rst(rst){
+    dff counter[50]; //clock
+    dff num[16];
+    dff level[2];
+    dff scoreencoded[1000](#INIT(0));
+    dff streak[10];
+    dff final_score[14];
+    
+    // for display
+    dff segcounter[28];
+    dff digitcounter[4];
+    dff brighter_seg[8];
+    dff brighter_sel[4];
+    dff displaybin[14];
+    dff type[3];
+      
+      
+      
+     
+
+    fsm state = {STANDBY, START, RUNLVL, SCORE1, SCORE2, RESET}; // MANUAL STATES
+    register regs2(#WIDTH(8));
+    score_score score_score;
+    display display; 
+    
+  }
+}
+ 
+  always {
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    
+    led = 8h00;             // turn LEDs off
+    spi_miso = bz;          // not using SPI
+    spi_channel = bzzzz;    // not using flags
+    avr_rx = bz;            // not using serial port
+    outer = 0;
+    inner = 0;
+    buzz = 0;
+    button1_cond.in = button;
+    button1_edge.in = button1_cond.out;
+    
+//----------------------------------------------------------------------------------------------------
+    display.whichlevel = level.q;
+    display.counter = counter.q;
+    display.button = button1_edge.out;
+    display.enable = 0;
+    display.reset = 0;
+    
+// for display ---------------------------------------------------------------------------------------
+    segcounter.d=segcounter.q+1;
+    io_seg = brighter_seg.q;
+    sel = brighter_sel.q;
+    
+    // into module segdisplay
+    segdisplay.digitcounter = digitcounter.q;
+    segdisplay.score = displaybin.q;
+    segdisplay.type = type.q;
+   
+
+    
+    regs2.en = 0;
+    regs2.data = 0;
+            
+//------------------------------------------------------------------------------------------------------
+    
+    score_score.enable = 0;
+    score_score.level = 0;
+    score_score.button = button1_edge.out;
+    score_score.scoreencoded = 0;
+    
+//------------------------------------------------------------------------------------------------------    
+    
+    case (state.q){
+      state.STANDBY: //a "level select" state. press the button when the blue lines up with one of the reds. 5,9,13 are levels while 2 & 7 are testing for the alu.
+        counter.d = 0;
+        counter.d = counter.q + 1;
+        outer[num.q] = 1;
+        //inner is actually the outer red circle, and outer is the inner blue circle.
+        inner[5] = 1;
+        inner[9] = 1;
+        inner[13] = 1;
+        //below inners are for testing alu, comment out if not testing
+     /*   inner[2] = 1;
+        inner[7] = 1;
+        type.d = b000;  */
+        if (counter.q[24] == 1){
+          if (num.q == b1111){
+            num.d = 0;
+          }
+          else{
+            num.d = num.q + 1;
+          }
+          counter.d = 0;
+        }
+        
+        if (button1_edge.out == 1){ //this is how we get the button to work over clock cycles, by setting a permanent register that is dependent on an external input to set data
+          regs2.en = 1;
+          regs2.data = 1;
+        }
+        
+        if (regs2.out == 1){ //check for the button press
+          if (num.q == 5){ //if the indicator is at 5, proceed to level 1
+            regs2.en = 1;
+            regs2.data = 0;
+            level.d = b01;
+            state.d = state.START;
+          }
+          if (num.q == 9){ //level 2
+            regs2.en = 1;
+            regs2.data = 0;
+            level.d = b10;
+            state.d = state.START;
+          }
+          if (num.q == 13){ //level 3
+            regs2.en = 1;
+            regs2.data = 0;
+            level.d = b11;
+            state.d = state.START;
+          }
+          
+          /*
+          if (num.q == 2){  // FOR TESTING ALU
+            scoreencoded.d = b111001111101011;
+            level.d = b01;
+            state.d = state.SCORE1;
+            }
+            //score should be 11 -- see 7 seg
+            
+            if (num.q == 7){  // FOR TESTING ALU
+            scoreencoded.d = b01011010101011110000;
+            level.d = b10;
+            state.d = state.SCORE1;
+            }   
+            // score should be 9 -- see 7 seg
+            
+          */
+            
+          else{ //else reset the register (button press over)
+          regs2.en = 1;
+          regs2.data = 0;
+          }
+        }
+        
+      state.START: //transition state into display.luc which is the game display.
+          num.d = 0;
+          counter.d = 0;
+          scoreencoded.d = 1;
+          type.d = b001;
+
+          
+          
+        case(level.q){
+          b1: 
+          display.whichlevel = b1; //pass level over
+          state.d = state.RUNLVL;
+          b10:
+          display.whichlevel = b10;
+          state.d = state.RUNLVL; 
+          b11:
+          display.whichlevel = b11;
+          state.d = state.RUNLVL;
+        }
+        
+     
+      state.RUNLVL:
+      led=level.q;
+      counter.d = 0;
+      counter.d = counter.q + 1;
+      scoreencoded.d = display.score_encoded; //take "scoreencoded" from the display module for passing to score module later.
+      // "scoreencoded" is a binary number that is set bitwise -- 1 if it is a hit, 0 if it is a miss.
+      //led = scoreencoded.q; //testing later
+      display.button = button1_edge.out; //pass button input to display module
+      display.enable = 1; //activate the display module
+      outer[display.outer] = 1; //take light outputs from the display module and show
+      inner[0] = display.inner[0];
+      inner[1] = display.inner[1];
+      inner[2] = display.inner[2];
+      inner[3] = display.inner[3];
+      inner[4] = display.inner[4];
+      inner[5] = display.inner[5];
+      inner[6] = display.inner[6];
+      inner[7] = display.inner[7];
+      inner[8] = display.inner[8];
+      inner[9] = display.inner[9];
+      inner[10] = display.inner[10];
+      inner[11] = display.inner[11];
+      inner[12] = display.inner[12];
+      inner[13] = display.inner[13];
+      inner[14] = display.inner[14];
+      inner[15] = display.inner[15];
+      buzz = display.buzz; //buzzer output as well
+      streak.d = display.streak_num; //show the current streak on the 7 seg
+      displaybin.d = streak.q;
+      
+      if (counter.q[24] == 1){ //set the counter (clk) to reset when its 24th bit is first high
+        counter.d = 0;
+        }
+      
+      if (display.end_signal == 1){ //take an "end" output from the display module to go to the next state
+        counter.d = 0;
+        num.d = 0;
+        state.d = state.SCORE1;
+        }
+        
+      state.SCORE1: // show score
+        display.enable = 0;
+        score_score.enable = 1;
+        score_score.scoreencoded = scoreencoded.q;
+        score_score.level = level.q;
+        type.d = score_score.type;
+        displaybin.d = score_score.displaybin; // display highscore
+        counter.d = counter.q + 1;
+        if(score_score.new_high == 1){
+         if (counter.q[25]==1){
+          // go into SCORE2 to display "HIGH"
+             counter.d = 0;
+            type.d = b010;  
+           state.d= state.SCORE2;
+        }
+          }
+       
+        if (score_score.end_signal == 1){
+          score_score.enable = 0;
+          state.d = state.RESET;
+        }
+        
+      state.SCORE2: // show HIGH
+        display.enable = 0;
+        score_score.enable = 1;
+        score_score.scoreencoded = scoreencoded.q;
+        score_score.level = level.q;
+        type.d = b010;
+        counter.d = counter.q + 1;
+        led[1]=1;
+        if(counter.q[25]==1){
+          counter.d = 0;
+          type.d = b001;
+          state.d = state.SCORE1;
+          }
+        
+        if (score_score.end_signal == 1){
+          score_score.enable = 0;
+          state.d = state.RESET;
+        }
+      
+      state.RESET:
+        type.d = b000;
+        scoreencoded.d = 0;
+        regs2.en = 1;
+        regs2.data = 0;
+        display.reset = 1;
+        state.d = state.STANDBY;
+        
+    }
+    
+    
+    
+// for seven seg display -----------------------------------------------
+    
+ if(segcounter.q[16] == 1){   //16
+      segcounter.d = 0;
+      digitcounter.d = digitcounter.q + 1;   // light up the next digit
+      
+      // input to display
+      segdisplay.digitcounter=digitcounter.q;
+      // receive output from display
+      sel = segdisplay.sel;
+      io_seg = segdisplay.io_seg;
+      brighter_seg.d = segdisplay.brighter_seg;
+      brighter_sel.d = segdisplay.brighter_sel;      
+      
+      if(digitcounter.q[3] == 1){
+        digitcounter.d = 0;
+        }
+      }
+    
+  }
+}

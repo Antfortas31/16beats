@@ -1,0 +1,63 @@
+module alu (
+    input alufn[6],
+    input a[16],
+    input b[16],
+    output op[16],
+    output z[1],
+    output v[1],
+    output n[1]
+  ) {
+  
+  adder adder;
+  compare mycompare;
+  shifter myshifter;
+  
+  
+   always{
+    //z,v,n are all 0 unless using adder/cmp
+    op = 16b0;
+    z = 0;
+    v = 0;
+    n = 0;
+    
+    //transfer a and b to modules (add your modules here)
+    //adder input
+    adder.alufn=alufn;
+    adder.a = a; 
+    adder.b = b; 
+    
+    // giving shifter their inputs
+    myshifter.alufn = alufn;
+    myshifter.a = a;
+    myshifter.b = b;
+    
+    
+    // giving compare their inputs
+    mycompare.alufn = alufn;
+    mycompare.z = adder.z;
+    mycompare.v = adder.v;
+    mycompare.n = adder.n;
+    
+    
+    
+    //choose results based on alufn[5:4]
+    case(alufn[5:4]){
+      b00:
+        op = adder.result;
+        z = adder.z;
+        v = adder.v;
+        n = adder.n;
+     b10:
+        op = myshifter.op;
+           
+     b11:
+        op = mycompare.op;
+        z = adder.z;
+        v = adder.v;
+        n = adder.n; 
+        
+  }
+ }
+}
+        
+        
